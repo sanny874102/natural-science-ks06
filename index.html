@@ -1,0 +1,644 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>國小6上康軒自然 第一次段考線上測驗大題庫（含內建圖表與官方詳解）</title>
+    <!-- 引入 Tailwind CSS 與 FontAwesome 圖標 -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&display=swap');
+        body { font-family: 'Noto Sans TC', sans-serif; }
+        .quiz-table th, .quiz-table td { border: 1px solid #cbd5e1; padding: 8px 12px; text-align: center; }
+        .quiz-table th { background-color: #f1f5f9; font-weight: 700; color: #334155; }
+    </style>
+</head>
+<body class="bg-slate-50 flex flex-col items-center justify-center p-4 min-h-screen">
+
+    <div class="w-full max-w-4xl bg-white rounded-2xl shadow-xl p-6 md:p-8 space-y-6 my-6">
+        
+        <!-- 標題區 -->
+        <div class="text-center space-y-2 border-b pb-4">
+            <h1 class="text-2xl md:text-3xl font-bold text-teal-600 flex items-center justify-center gap-2">
+                <i class="fa-solid fa-flask-vial"></i> 6上康軒自然 線上練習大題庫
+            </h1>
+            <p class="text-slate-600 text-sm md:text-base">範圍：115國小6上康軒自然 第一次段考（內建視覺化實驗圖表、天氣圖與官方詳解）</p>
+        </div>
+
+        <!-- 初始設定畫面 -->
+        <div id="setup-screen" class="space-y-6">
+            <div class="bg-teal-50/60 border border-teal-200 rounded-xl p-5 space-y-4">
+                <div class="flex flex-col md:flex-row items-center justify-between gap-4">
+                    <label for="question-count" class="font-semibold text-slate-700 text-lg flex items-center gap-2">
+                        <i class="fa-solid fa-list-check text-teal-600"></i> 選擇測驗題數（含完整圖表題組不切題）：
+                    </label>
+                    <select id="question-count" class="w-full md:w-auto min-w-[280px] px-4 py-2.5 bg-white border border-slate-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-teal-500 text-slate-700 font-medium">
+                        <option value="10">挑戰 10 題（快速隨機練習）</option>
+                        <option value="25">挑戰 25 題（精選中量測驗）</option>
+                        <option value="50">挑戰 50 題（考前實力衝刺）</option>
+                        <option value="all" selected>挑戰全部完整題庫（共 156 題／題組）</option>
+                    </select>
+                </div>
+                <div class="text-xs md:text-sm text-slate-500 flex items-start gap-2 pt-1">
+                    <i class="fa-solid fa-image text-teal-600 mt-1"></i>
+                    <span><strong>內建清晰圖表：</strong>所有「看圖回答問題、電路連接、天氣符號、實驗表格」皆已內建清晰的視覺化圖表與表格，免外掛圖檔即可直接看圖作答！</span>
+                </div>
+            </div>
+
+            <button onclick="startQuiz()" class="w-full py-3.5 bg-teal-600 hover:bg-teal-700 text-white font-bold rounded-xl shadow-lg transition duration-200 flex items-center justify-center gap-2 text-lg">
+                <i class="fa-solid fa-play"></i> 開始新測驗
+            </button>
+        </div>
+
+        <!-- 測驗進行畫面 (預設隱藏) -->
+        <div id="quiz-screen" class="hidden space-y-6">
+            <div class="flex flex-wrap justify-between items-center border-b pb-3 gap-2">
+                <span id="progress-text" class="text-slate-500 font-medium bg-slate-100 px-3 py-1 rounded-lg">第 1 / 10 題</span>
+                <span id="score-text" class="text-teal-600 font-bold bg-teal-50 px-3 py-1 rounded-lg border border-teal-200">答對子題：0 / 0（目前得分：0 分）</span>
+            </div>
+
+            <div id="question-container" class="space-y-6">
+                <!-- 動態載入單題或完整題組 -->
+            </div>
+
+            <!-- 單題詳解區 (作答後顯示) -->
+            <div id="explanation-box" class="hidden bg-sky-50 border border-sky-200 rounded-xl p-4 text-slate-700 space-y-1">
+                <div class="font-bold text-sky-800 flex items-center gap-1.5">
+                    <i class="fa-solid fa-circle-info"></i> 官方解答與觀念解析：
+                </div>
+                <p id="explanation-text" class="text-sm md:text-base whitespace-pre-line"></p>
+            </div>
+
+            <div class="flex justify-between items-center pt-2">
+                <button onclick="resetQuiz()" class="px-4 py-2 text-slate-500 hover:text-slate-700 text-sm font-medium transition">
+                    <i class="fa-solid fa-arrow-rotate-left mr-1"></i> 返回首頁重選
+                </button>
+                <button id="next-btn" onclick="nextQuestion()" class="hidden px-6 py-2.5 bg-teal-600 hover:bg-teal-700 text-white font-bold rounded-xl shadow transition duration-200">
+                    下一題 <i class="fa-solid fa-arrow-right ml-1"></i>
+                </button>
+            </div>
+        </div>
+
+        <!-- 結算畫面 (預設隱藏) -->
+        <div id="result-screen" class="hidden text-center space-y-6 py-6">
+            <div class="space-y-3">
+                <h2 class="text-3xl font-bold text-slate-800">🎉 測驗完成！</h2>
+                <p id="final-score" class="text-3xl font-extrabold text-teal-600"></p>
+                <p id="final-detail" class="text-slate-600 text-base"></p>
+            </div>
+            <button onclick="resetQuiz()" class="px-8 py-3 bg-teal-600 hover:bg-teal-700 text-white font-bold rounded-xl shadow-lg transition duration-200">
+                <i class="fa-solid fa-rotate-right mr-1"></i> 重新測驗
+            </button>
+        </div>
+
+        <!-- 分享與網址區 -->
+        <div class="bg-slate-50 border border-slate-200 rounded-xl p-4 flex flex-col md:flex-row items-center justify-between gap-3">
+            <span class="text-sm font-medium text-slate-600 flex items-center gap-2">
+                <i class="fa-solid fa-globe text-teal-600"></i> 分享測驗網址：
+            </span>
+            <div class="flex w-full md:w-auto gap-2">
+                <input type="text" id="share-url" readonly value="" class="w-full md:w-80 px-3 py-1.5 bg-white border border-slate-300 rounded-lg text-sm text-slate-600 focus:outline-none">
+                <button onclick="copyUrl()" class="px-4 py-1.5 bg-teal-600 hover:bg-teal-700 text-white text-sm font-medium rounded-lg shadow transition flex items-center gap-1 shrink-0">
+                    <i class="fa-solid fa-copy"></i> 複製網址
+                </button>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        window.addEventListener('DOMContentLoaded', () => {
+            const urlInput = document.getElementById('share-url');
+            urlInput.value = window.location.href;
+        });
+
+        // ================= 內建視覺化 SVG 圖表與 HTML 表格庫 =================
+        const DIAGRAMS = {
+            typhoonTable: `
+                <div class="my-3 overflow-x-auto bg-white p-3 rounded-xl border border-slate-200 shadow-sm">
+                    <table class="quiz-table w-full text-sm">
+                        <thead><tr><th>颱風強度</th><th>近中心最大風速 (公尺/每秒)</th></tr></thead>
+                        <tbody>
+                            <tr><td>輕度颱風</td><td>17.2 ~ 32.6</td></tr>
+                            <tr><td>中度颱風</td><td>32.7 ~ 50.9</td></tr>
+                            <tr><td class="font-bold text-rose-600">強烈颱風</td><td class="font-bold text-rose-600">≥ 51.0</td></tr>
+                        </tbody>
+                    </table>
+                </div>`,
+            wrongCircuitBeaker: `
+                <div class="my-3 flex justify-center bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
+                    <svg viewBox="0 0 380 190" class="w-full max-w-md h-auto">
+                        <!-- 燒杯與水溶液 -->
+                        <rect x="70" y="65" width="90" height="85" fill="#bae6fd" rx="4"/>
+                        <path d="M65 35 L70 35 L70 150 L160 150 L160 35 L165 35" fill="none" stroke="#475569" stroke-width="3"/>
+                        <text x="115" y="115" text-anchor="middle" font-size="13" fill="#0369a1" font-weight="bold">待測水溶液</text>
+                        <!-- LED 燈 -->
+                        <path d="M35 125 A12 12 0 0 1 59 125 L59 142 L35 142 Z" fill="#fca5a5" stroke="#dc2626" stroke-width="2"/>
+                        <line x1="42" y1="142" x2="42" y2="165" stroke="#475569" stroke-width="2.5"/> <!-- 短腳 -->
+                        <line x1="52" y1="142" x2="52" y2="180" stroke="#dc2626" stroke-width="2.5"/> <!-- 長腳 -->
+                        <text x="22" y="160" font-size="11" fill="#475569">短腳</text>
+                        <text x="58" y="182" font-size="11" fill="#dc2626" font-weight="bold">長腳(+)</text>
+                        <!-- 電池座 -->
+                        <rect x="240" y="105" width="110" height="50" fill="#334155" rx="6"/>
+                        <rect x="250" y="113" width="90" height="16" fill="#cbd5e1" rx="2"/>
+                        <rect x="250" y="132" width="90" height="16" fill="#cbd5e1" rx="2"/>
+                        <text x="265" y="125" font-size="12" fill="#dc2626" font-weight="bold">＋正極</text>
+                        <text x="315" y="144" font-size="12" fill="#1e293b" font-weight="bold">－負極</text>
+                        <!-- 電線連接 -->
+                        <path d="M85 90 Q85 15 42 15 L42 162" fill="none" stroke="#64748b" stroke-width="3"/>
+                        <path d="M145 90 Q180 15 240 115" fill="none" stroke="#ef4444" stroke-width="3"/>
+                        <path d="M52 175 Q150 185 240 142" fill="none" stroke="#3b82f6" stroke-width="3"/>
+                        <text x="215" y="55" font-size="12" fill="#dc2626" font-weight="bold">電池正極出來的電線</text>
+                        <text x="170" y="172" font-size="12" fill="#1d4ed8" font-weight="bold">電池負極出來的電線(接在長腳)</text>
+                    </svg>
+                </div>`,
+            satelliteTyphoon: `
+                <div class="my-3 flex justify-center bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
+                    <svg viewBox="0 0 320 200" class="w-full max-w-sm h-auto rounded-lg">
+                        <rect width="320" height="200" fill="#1e293b"/>
+                        <!-- 臺灣輪廓示意 -->
+                        <path d="M150 95 Q160 110 152 130 Q144 115 150 95 Z" fill="#4ade80" stroke="#fff" stroke-width="1"/>
+                        <!-- 甲、乙、丙零散雲層 -->
+                        <ellipse cx="180" cy="35" rx="35" ry="15" fill="#cbd5e1" opacity="0.7"/>
+                        <rect x="168" y="25" width="22" height="18" fill="#fff" rx="3"/><text x="179" y="39" text-anchor="middle" font-size="13" font-weight="bold">甲</text>
+                        <ellipse cx="45" cy="90" rx="30" ry="25" fill="#cbd5e1" opacity="0.6"/>
+                        <rect x="34" y="80" width="22" height="18" fill="#fff" rx="3"/><text x="45" y="94" text-anchor="middle" font-size="13" font-weight="bold">乙</text>
+                        <ellipse cx="265" cy="50" rx="28" ry="18" fill="#cbd5e1" opacity="0.5"/>
+                        <rect x="254" y="40" width="22" height="18" fill="#fff" rx="3"/><text x="265" y="54" text-anchor="middle" font-size="13" font-weight="bold">丙</text>
+                        <!-- 丁：螺旋颱風雲系與颱風眼 -->
+                        <circle cx="175" cy="145" r="42" fill="#f8fafc" opacity="0.9"/>
+                        <path d="M175 103 Q225 115 215 155 Q195 190 150 180 Q125 160 145 120" fill="none" stroke="#e2e8f0" stroke-width="8" stroke-linecap="round"/>
+                        <circle cx="175" cy="140" r="5" fill="#0f172a"/> <!-- 颱風眼 -->
+                        <rect x="164" y="152" width="22" height="18" fill="#fef08a" stroke="#ca8a04" rx="3"/><text x="175" y="166" text-anchor="middle" font-size="13" font-weight="bold" fill="#854d0e">丁</text>
+                    </svg>
+                </div>`,
+            abcdSolutionsTable: `
+                <div class="my-3 overflow-x-auto bg-white p-3 rounded-xl border border-slate-200 shadow-sm">
+                    <table class="quiz-table w-full text-sm">
+                        <thead><tr><th>水溶液</th><th>紅色石蕊試紙</th><th>藍色石蕊試紙</th><th>導電性</th></tr></thead>
+                        <tbody>
+                            <tr><td class="font-bold">A</td><td>不變色</td><td class="text-rose-600 font-bold">變紅色</td><td>容易導電</td></tr>
+                            <tr><td class="font-bold">B</td><td class="text-blue-600 font-bold">變藍色</td><td>不變色</td><td>容易導電</td></tr>
+                            <tr><td class="font-bold">C</td><td>不變色</td><td>不變色</td><td class="text-slate-500">不易導電</td></tr>
+                            <tr><td class="font-bold">D</td><td>不變色</td><td>不變色</td><td>容易導電</td></tr>
+                        </tbody>
+                    </table>
+                </div>`,
+            isobar1025: `
+                <div class="my-3 flex justify-center bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
+                    <svg viewBox="0 0 280 160" class="w-full max-w-xs h-auto">
+                        <rect width="280" height="160" fill="#f8fafc" rx="8"/>
+                        <ellipse cx="145" cy="85" rx="115" ry="62" fill="none" stroke="#64748b" stroke-width="2"/>
+                        <ellipse cx="145" cy="85" rx="80" ry="42" fill="none" stroke="#0284c7" stroke-width="2.5"/>
+                        <ellipse cx="145" cy="85" rx="42" ry="22" fill="none" stroke="#64748b" stroke-width="2"/>
+                        <text x="145" y="93" text-anchor="middle" font-size="26" font-weight="bold" fill="#dc2626">H</text>
+                        <rect x="115" y="32" width="42" height="18" fill="#f8fafc"/><text x="136" y="45" text-anchor="middle" font-size="13" font-weight="bold" fill="#0284c7">1025</text>
+                        <circle cx="70" cy="68" r="5" fill="#dc2626"/>
+                        <rect x="35" y="55" width="28" height="22" fill="#fef08a" stroke="#ca8a04" rx="4"/>
+                        <text x="49" y="71" text-anchor="middle" font-size="14" font-weight="bold" fill="#854d0e">甲</text>
+                    </svg>
+                </div>`,
+            waterChart: `
+                <div class="my-3 flex justify-center bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
+                    <svg viewBox="0 0 420 210" class="w-full max-w-lg h-auto">
+                        <rect x="145" y="8" width="130" height="32" fill="#e0f2fe" stroke="#0284c7" stroke-width="2" rx="6"/>
+                        <text x="210" y="29" text-anchor="middle" font-weight="bold" font-size="15" fill="#0369a1">大氣中的水</text>
+                        <path d="M210 40 L210 55 M105 55 L315 55 M105 55 L105 75 M315 55 L315 75" stroke="#475569" stroke-width="2"/>
+                        <text x="95" y="50" text-anchor="end" font-size="12" fill="#334155">在空中形成</text>
+                        <text x="325" y="50" text-anchor="start" font-size="12" fill="#334155">在地面附近形成</text>
+                        <!-- 甲、乙 -->
+                        <rect x="45" y="75" width="120" height="36" fill="#fef9c3" stroke="#ca8a04" stroke-width="2" rx="6"/>
+                        <text x="105" y="98" text-anchor="middle" font-weight="bold" font-size="15" fill="#854d0e">甲 ( ？ )</text>
+                        <rect x="255" y="75" width="120" height="36" fill="#fef9c3" stroke="#ca8a04" stroke-width="2" rx="6"/>
+                        <text x="315" y="98" text-anchor="middle" font-weight="bold" font-size="15" fill="#854d0e">乙 ( ？ )</text>
+                        <!-- 分支至丙丁戊己 -->
+                        <path d="M105 111 L105 145 M60 145 L150 145 M60 145 L60 162 M150 145 L150 162" stroke="#475569" stroke-width="2"/>
+                        <text x="55" y="135" text-anchor="middle" font-size="11" fill="#334155">冰晶落下未融化</text>
+                        <text x="155" y="135" text-anchor="middle" font-size="11" fill="#334155">水滴或冰晶融化</text>
+                        <path d="M315 111 L315 145 M270 145 L360 145 M270 145 L270 162 M360 145 L360 162" stroke="#475569" stroke-width="2"/>
+                        <text x="265" y="135" text-anchor="middle" font-size="11" fill="#334155">直接變成冰晶</text>
+                        <text x="365" y="135" text-anchor="middle" font-size="11" fill="#334155">凝結成小水珠</text>
+                        <!-- 丙丁戊己 -->
+                        <rect x="30" y="162" width="60" height="36" fill="#f1f5f9" stroke="#64748b" stroke-width="2" rx="6"/><text x="60" y="185" text-anchor="middle" font-weight="bold" font-size="15">丙</text>
+                        <rect x="120" y="162" width="60" height="36" fill="#f1f5f9" stroke="#64748b" stroke-width="2" rx="6"/><text x="150" y="185" text-anchor="middle" font-weight="bold" font-size="15">丁</text>
+                        <rect x="240" y="162" width="60" height="36" fill="#f1f5f9" stroke="#64748b" stroke-width="2" rx="6"/><text x="270" y="185" text-anchor="middle" font-weight="bold" font-size="15">戊</text>
+                        <rect x="330" y="162" width="60" height="36" fill="#f1f5f9" stroke="#64748b" stroke-width="2" rx="6"/><text x="360" y="185" text-anchor="middle" font-weight="bold" font-size="15">己</text>
+                    </svg>
+                </div>`,
+            weatherSymbols6: `
+                <div class="my-3 flex justify-center bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
+                    <svg viewBox="0 0 420 190" class="w-full max-w-lg h-auto">
+                        <!-- 6格邊框 -->
+                        <rect x="5" y="5" width="130" height="85" fill="#f8fafc" stroke="#cbd5e1" rx="6"/>
+                        <rect x="145" y="5" width="130" height="85" fill="#f8fafc" stroke="#cbd5e1" rx="6"/>
+                        <rect x="285" y="5" width="130" height="85" fill="#f8fafc" stroke="#cbd5e1" rx="6"/>
+                        <rect x="5" y="100" width="130" height="85" fill="#f8fafc" stroke="#cbd5e1" rx="6"/>
+                        <rect x="145" y="100" width="130" height="85" fill="#f8fafc" stroke="#cbd5e1" rx="6"/>
+                        <rect x="285" y="100" width="130" height="85" fill="#f8fafc" stroke="#cbd5e1" rx="6"/>
+                        <!-- 1. 冷鋒 -->
+                        <text x="15" y="25" font-size="13" font-weight="bold" fill="#334155">符號 1</text>
+                        <path d="M25 60 Q70 55 115 35" fill="none" stroke="#2563eb" stroke-width="3"/>
+                        <polygon points="40,59 52,56 48,70" fill="#2563eb"/>
+                        <polygon points="68,53 80,48 77,63" fill="#2563eb"/>
+                        <polygon points="95,44 107,38 104,53" fill="#2563eb"/>
+                        <!-- 2. 暖鋒 -->
+                        <text x="155" y="25" font-size="13" font-weight="bold" fill="#334155">符號 2</text>
+                        <path d="M165 65 Q210 45 255 40" fill="none" stroke="#dc2626" stroke-width="3"/>
+                        <path d="M178 58 A7 7 0 0 1 192 52 Z" fill="#dc2626"/>
+                        <path d="M206 49 A7 7 0 0 1 220 45 Z" fill="#dc2626"/>
+                        <path d="M234 43 A7 7 0 0 1 248 41 Z" fill="#dc2626"/>
+                        <!-- 3. 滯留鋒 -->
+                        <text x="295" y="25" font-size="13" font-weight="bold" fill="#334155">符號 3</text>
+                        <path d="M305 62 Q350 52 395 38" fill="none" stroke="#7c3aed" stroke-width="3"/>
+                        <polygon points="318,60 332,57 326,72" fill="#2563eb"/>
+                        <path d="M345 53 A8 8 0 0 1 360 48 Z" fill="#dc2626"/>
+                        <polygon points="373,45 387,40 382,56" fill="#2563eb"/>
+                        <!-- 4. 等壓線 -->
+                        <text x="15" y="120" font-size="13" font-weight="bold" fill="#334155">符號 4</text>
+                        <ellipse cx="75" cy="148" rx="40" ry="26" fill="none" stroke="#475569" stroke-width="2"/>
+                        <ellipse cx="75" cy="148" rx="26" ry="17" fill="none" stroke="#475569" stroke-width="2"/>
+                        <ellipse cx="75" cy="148" rx="12" ry="8" fill="none" stroke="#475569" stroke-width="2"/>
+                        <!-- 5. L -->
+                        <text x="155" y="120" font-size="13" font-weight="bold" fill="#334155">符號 5</text>
+                        <text x="210" y="165" text-anchor="middle" font-size="38" font-weight="bold" fill="#dc2626">L</text>
+                        <!-- 6. H -->
+                        <text x="295" y="120" font-size="13" font-weight="bold" fill="#334155">符號 6</text>
+                        <text x="350" y="165" text-anchor="middle" font-size="38" font-weight="bold" fill="#2563eb">H</text>
+                    </svg>
+                </div>`,
+            led2Ways: `
+                <div class="my-3 flex justify-center bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
+                    <svg viewBox="0 0 380 155" class="w-full max-w-md h-auto">
+                        <!-- 甲圖 -->
+                        <rect x="10" y="8" width="170" height="140" fill="#f8fafc" stroke="#cbd5e1" rx="8"/>
+                        <text x="30" y="30" font-weight="bold" font-size="16" fill="#1e293b">甲</text>
+                        <path d="M85 28 A10 10 0 0 1 105 28 L105 45 L85 45 Z" fill="#e2e8f0" stroke="#475569" stroke-width="2"/>
+                        <line x1="90" y1="45" x2="82" y2="85" stroke="#dc2626" stroke-width="2.5"/> <!-- 長腳(左) -->
+                        <line x1="100" y1="45" x2="105" y2="72" stroke="#475569" stroke-width="2.5"/> <!-- 短腳(右) -->
+                        <text x="65" y="75" font-size="11" fill="#dc2626" font-weight="bold">長腳</text>
+                        <text x="110" y="68" font-size="11" fill="#475569">短腳</text>
+                        <rect x="45" y="110" width="95" height="24" fill="#94a3b8" stroke="#334155" stroke-width="2"/>
+                        <rect x="140" y="116" width="6" height="12" fill="#334155"/>
+                        <text x="58" y="127" font-size="14" font-weight="bold">－</text>
+                        <text x="122" y="127" font-size="14" font-weight="bold" fill="#dc2626">＋</text>
+                        <path d="M84 72 Q30 85 45 122" fill="none" stroke="#334155" stroke-width="2.5"/>
+                        <path d="M104 68 Q155 80 146 122" fill="none" stroke="#334155" stroke-width="2.5"/>
+
+                        <!-- 乙圖 -->
+                        <rect x="200" y="8" width="170" height="140" fill="#f8fafc" stroke="#cbd5e1" rx="8"/>
+                        <text x="220" y="30" font-weight="bold" font-size="16" fill="#1e293b">乙</text>
+                        <path d="M275 28 A10 10 0 0 1 295 28 L295 45 L275 45 Z" fill="#fef08a" stroke="#ca8a04" stroke-width="2"/>
+                        <line x1="280" y1="45" x2="272" y2="85" stroke="#dc2626" stroke-width="2.5"/> <!-- 長腳(左) -->
+                        <line x1="290" y1="45" x2="295" y2="72" stroke="#475569" stroke-width="2.5"/> <!-- 短腳(右) -->
+                        <text x="255" y="75" font-size="11" fill="#dc2626" font-weight="bold">長腳</text>
+                        <text x="300" y="68" font-size="11" fill="#475569">短腳</text>
+                        <rect x="240" y="110" width="95" height="24" fill="#94a3b8" stroke="#334155" stroke-width="2"/>
+                        <rect x="234" y="116" width="6" height="12" fill="#334155"/>
+                        <text x="250" y="127" font-size="14" font-weight="bold" fill="#dc2626">＋</text>
+                        <text x="318" y="127" font-size="14" font-weight="bold">－</text>
+                        <path d="M274 72 Q220 85 234 122" fill="none" stroke="#dc2626" stroke-width="2.5"/>
+                        <path d="M294 68 Q345 80 335 122" fill="none" stroke="#334155" stroke-width="2.5"/>
+                    </svg>
+                </div>`,
+            fengyuanTable: `
+                <div class="my-3 overflow-x-auto bg-white p-3 rounded-xl border border-slate-200 shadow-sm">
+                    <table class="quiz-table w-full text-sm">
+                        <thead>
+                            <tr><th>日期</th><th>10月16日</th><th>10月17日</th><th>10月18日</th><th>10月19日</th><th>10月20日</th></tr>
+                        </thead>
+                        <tbody>
+                            <tr><td class="font-bold bg-slate-50">天氣狀況</td><td>多雲時晴</td><td>晴天</td><td>陰天</td><td class="text-blue-600 font-bold">雨天</td><td class="text-blue-600 font-bold">雨天</td></tr>
+                            <tr><td class="font-bold bg-slate-50">氣溫 (°C)</td><td>30</td><td>29</td><td>27</td><td class="text-rose-600 font-bold">22</td><td class="text-rose-600 font-bold">21</td></tr>
+                            <tr><td class="font-bold bg-slate-50">風向</td><td>東南風</td><td>東北風</td><td>東北風</td><td>東北風</td><td>東北風</td></tr>
+                            <tr><td class="font-bold bg-slate-50">風力</td><td>小</td><td>小</td><td>大</td><td>中</td><td>小</td></tr>
+                        </tbody>
+                    </table>
+                </div>`,
+            coldFrontMarchTable: `
+                <div class="my-3 grid grid-cols-1 md:grid-cols-2 gap-3 bg-white p-3 rounded-xl border border-slate-200 shadow-sm">
+                    <table class="quiz-table w-full text-sm">
+                        <thead><tr><th>地區</th><th>3月3日全日平均氣溫(℃)</th></tr></thead>
+                        <tbody>
+                            <tr><td>臺北</td><td>23.5</td></tr>
+                            <tr><td>臺中</td><td>25.1</td></tr>
+                            <tr><td>宜蘭</td><td>23.7</td></tr>
+                        </tbody>
+                    </table>
+                    <table class="quiz-table w-full text-sm">
+                        <thead><tr><th>地區</th><th>3月4日全日平均氣溫(℃)</th></tr></thead>
+                        <tbody>
+                            <tr><td>臺北</td><td class="text-blue-600 font-bold">21.1</td></tr>
+                            <tr><td>臺中</td><td class="text-blue-600 font-bold">22.9</td></tr>
+                            <tr><td>宜蘭</td><td class="text-blue-600 font-bold">22.4</td></tr>
+                        </tbody>
+                    </table>
+                </div>`,
+            conductivityTable5: `
+                <div class="my-3 overflow-x-auto bg-white p-3 rounded-xl border border-slate-200 shadow-sm">
+                    <table class="quiz-table w-full text-sm">
+                        <thead><tr><th>物質名稱</th><th>A.純水</th><th>B.食鹽</th><th>C.食鹽水</th><th>D.砂糖</th><th>E.砂糖水</th></tr></thead>
+                        <tbody>
+                            <tr><td class="font-bold bg-slate-50">發光二極體發亮情形</td><td>不亮</td><td>不亮</td><td class="text-amber-600 font-bold">亮 💡</td><td>不亮</td><td>不亮</td></tr>
+                        </tbody>
+                    </table>
+                </div>`,
+            butterflyPeaChart: `
+                <div class="my-3 bg-white p-4 rounded-xl border border-slate-200 shadow-sm space-y-3">
+                    <div class="flex justify-around items-end pt-2 pb-1">
+                        <div class="flex flex-col items-center">
+                            <div class="w-12 h-20 rounded-b-2xl border-2 border-slate-400 flex items-end overflow-hidden p-0.5"><div class="w-full h-14 bg-emerald-500 rounded-b-xl"></div></div>
+                            <span class="font-bold text-slate-700 mt-1.5 text-sm">甲 (綠色)</span>
+                        </div>
+                        <div class="flex flex-col items-center">
+                            <div class="w-12 h-20 rounded-b-2xl border-2 border-slate-400 flex items-end overflow-hidden p-0.5"><div class="w-full h-14 bg-blue-500 rounded-b-xl"></div></div>
+                            <span class="font-bold text-slate-700 mt-1.5 text-sm">乙 (藍色)</span>
+                        </div>
+                        <div class="flex flex-col items-center">
+                            <div class="w-12 h-20 rounded-b-2xl border-2 border-slate-400 flex items-end overflow-hidden p-0.5"><div class="w-full h-14 bg-purple-500 rounded-b-xl"></div></div>
+                            <span class="font-bold text-slate-700 mt-1.5 text-sm">丙 (紫色)</span>
+                        </div>
+                    </div>
+                    <table class="quiz-table w-full text-sm">
+                        <thead><tr><th>水溶液編號</th><th>甲</th><th>乙</th><th>丙</th></tr></thead>
+                        <tbody>
+                            <tr><td class="font-bold bg-slate-50">滴入蝶豆花瓣汁結果</td><td class="text-emerald-600 font-bold">綠色</td><td class="text-blue-600 font-bold">藍色</td><td class="text-purple-600 font-bold">紫色</td></tr>
+                        </tbody>
+                    </table>
+                </div>`,
+            threeDatesWeatherMaps: `
+                <div class="my-3 bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
+                    <svg viewBox="0 0 420 135" class="w-full h-auto">
+                        <!-- 甲：滯留鋒 -->
+                        <rect x="5" y="5" width="130" height="125" fill="#f0f9ff" stroke="#94a3b8" rx="6"/>
+                        <text x="15" y="25" font-weight="bold" font-size="14" fill="#0f172a">甲 (地面天氣圖)</text>
+                        <path d="M68 65 Q74 78 68 92 Q62 78 68 65 Z" fill="#86efac" stroke="#166534"/> <!-- 臺灣 -->
+                        <path d="M20 85 Q70 75 120 55" fill="none" stroke="#7c3aed" stroke-width="2.5"/>
+                        <polygon points="38,81 48,79 44,90" fill="#2563eb"/>
+                        <path d="M65 75 A6 6 0 0 1 77 71 Z" fill="#dc2626"/>
+                        <polygon points="92,66 102,62 99,74" fill="#2563eb"/>
+                        <text x="70" y="118" text-anchor="middle" font-size="11" fill="#475569">臺灣上空有滯留鋒</text>
+                        <!-- 乙：冷鋒與高壓 -->
+                        <rect x="145" y="5" width="130" height="125" fill="#f0f9ff" stroke="#94a3b8" rx="6"/>
+                        <text x="155" y="25" font-weight="bold" font-size="14" fill="#0f172a">乙 (地面天氣圖)</text>
+                        <text x="175" y="55" font-weight="bold" font-size="18" fill="#2563eb">H</text>
+                        <path d="M208 65 Q214 78 208 92 Q202 78 208 65 Z" fill="#86efac" stroke="#166534"/>
+                        <path d="M180 95 Q215 80 255 45" fill="none" stroke="#2563eb" stroke-width="2.5"/>
+                        <polygon points="198,87 208,82 206,93" fill="#2563eb"/>
+                        <polygon points="225,71 234,64 233,76" fill="#2563eb"/>
+                        <text x="210" y="118" text-anchor="middle" font-size="11" fill="#475569">大陸高壓H與冷鋒</text>
+                        <!-- 丙：颱風低壓 -->
+                        <rect x="285" y="5" width="130" height="125" fill="#f0f9ff" stroke="#94a3b8" rx="6"/>
+                        <text x="295" y="25" font-weight="bold" font-size="14" fill="#0f172a">丙 (地面天氣圖)</text>
+                        <path d="M335 65 Q341 78 335 92 Q329 78 335 65 Z" fill="#86efac" stroke="#166534"/>
+                        <circle cx="362" cy="82" r="26" fill="none" stroke="#dc2626" stroke-width="1.5"/>
+                        <circle cx="362" cy="82" r="17" fill="none" stroke="#dc2626" stroke-width="1.5"/>
+                        <circle cx="362" cy="82" r="9" fill="none" stroke="#dc2626" stroke-width="1.5"/>
+                        <text x="362" y="87" text-anchor="middle" font-size="12" font-weight="bold" fill="#dc2626">L</text>
+                        <text x="350" y="118" text-anchor="middle" font-size="11" fill="#475569">密集圓形等壓線(颱風)</text>
+                    </svg>
+                </div>`,
+            litmus6Table: `
+                <div class="my-3 overflow-x-auto bg-white p-3 rounded-xl border border-slate-200 shadow-sm">
+                    <table class="quiz-table w-full text-sm">
+                        <thead>
+                            <tr><th colspan="2">編號</th><th>甲</th><th>乙</th><th>丙</th><th>丁</th><th>戊</th><th>己</th></tr>
+                        </thead>
+                        <tbody>
+                            <tr><td rowspan="2" class="font-bold bg-rose-50">紅色石蕊試紙</td><td>變藍色</td><td class="text-blue-600 font-bold">✔</td><td></td><td></td><td></td><td class="text-blue-600 font-bold">✔</td><td></td></tr>
+                            <tr><td>不變色</td><td></td><td>✔</td><td>✔</td><td>✔</td><td></td><td>✔</td></tr>
+                            <tr><td rowspan="2" class="font-bold bg-blue-50">藍色石蕊試紙</td><td>變紅色</td><td></td><td class="text-rose-600 font-bold">✔</td><td class="text-rose-600 font-bold">✔</td><td></td><td></td><td></td></tr>
+                            <tr><td>不變色</td><td>✔</td><td></td><td></td><td>✔</td><td>✔</td><td>✔</td></tr>
+                        </tbody>
+                    </table>
+                </div>`,
+            saltBeakers3: `
+                <div class="my-3 bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
+                    <div class="grid grid-cols-3 gap-3 text-center">
+                        <div class="p-3 bg-slate-50 rounded-lg border">
+                            <div class="font-bold text-slate-800 mb-1">甲杯 (30mL水)</div>
+                            <div class="text-teal-600 font-bold text-sm">🥄 🥄<br>完全溶解 2 平匙</div>
+                        </div>
+                        <div class="p-3 bg-slate-50 rounded-lg border">
+                            <div class="font-bold text-slate-800 mb-1">乙杯 (30mL水)</div>
+                            <div class="text-teal-600 font-bold text-sm">🥄 🥄 🥄<br>完全溶解 3 平匙</div>
+                        </div>
+                        <div class="p-3 bg-slate-50 rounded-lg border">
+                            <div class="font-bold text-slate-800 mb-1">丙杯 (30mL水)</div>
+                            <div class="text-teal-600 font-bold text-sm">🥄 🥄 🥄 🥄<br>完全溶解 4 平匙</div>
+                        </div>
+                    </div>
+                </div>`,
+            cloudMistFlask: `
+                <div class="my-3 flex justify-center bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
+                    <svg viewBox="0 0 320 180" class="w-full max-w-sm h-auto">
+                        <!-- 冰袋(乙) -->
+                        <rect x="115" y="15" width="70" height="28" fill="#bae6fd" stroke="#0284c7" stroke-width="2" rx="6"/>
+                        <text x="150" y="34" text-anchor="middle" font-size="12" font-weight="bold" fill="#0369a1">冰塊袋</text>
+                        <line x1="185" y1="28" x2="225" y2="28" stroke="#dc2626" stroke-width="2"/>
+                        <rect x="225" y="16" width="35" height="24" fill="#fef08a" stroke="#ca8a04" rx="4"/>
+                        <text x="242" y="33" text-anchor="middle" font-weight="bold" font-size="14">乙</text>
+                        <!-- 錐形瓶 -->
+                        <path d="M135 43 L135 75 L90 155 L210 155 L165 75 L165 43" fill="none" stroke="#334155" stroke-width="3"/>
+                        <!-- 瓶底熱水(甲) -->
+                        <path d="M102 132 L198 132 L208 153 L92 153 Z" fill="#fed7aa"/>
+                        <text x="150" y="148" text-anchor="middle" font-size="12" font-weight="bold" fill="#9a3412">溫熱水</text>
+                        <line x1="202" y1="142" x2="235" y2="142" stroke="#dc2626" stroke-width="2"/>
+                        <rect x="235" y="130" width="35" height="24" fill="#fef08a" stroke="#ca8a04" rx="4"/>
+                        <text x="252" y="147" text-anchor="middle" font-weight="bold" font-size="14">甲</text>
+                        <!-- 瓶內白煙與水蒸氣 -->
+                        <circle cx="150" cy="70" r="18" fill="#e2e8f0" opacity="0.8"/>
+                        <circle cx="138" cy="85" r="15" fill="#e2e8f0" opacity="0.7"/>
+                        <circle cx="162" cy="88" r="15" fill="#e2e8f0" opacity="0.7"/>
+                        <text x="70" y="80" font-size="12" fill="#475569">點燃線香煙粒</text>
+                    </svg>
+                </div>`,
+            fourBeakersTable14: `
+                <div class="my-3 overflow-x-auto bg-white p-3 rounded-xl border border-slate-200 shadow-sm">
+                    <table class="quiz-table w-full text-sm">
+                        <thead><tr><th>水溶液</th><th>紅色石蕊試紙</th><th>藍色石蕊試紙</th><th>導電性 (✕不易 / ○容易)</th></tr></thead>
+                        <tbody>
+                            <tr><td class="font-bold">甲</td><td>不變色</td><td>不變色</td><td class="text-rose-600 font-bold">✕</td></tr>
+                            <tr><td class="font-bold">乙</td><td>不變色</td><td class="text-rose-600 font-bold">變色(紅)</td><td class="text-emerald-600 font-bold">○</td></tr>
+                            <tr><td class="font-bold">丙</td><td class="text-blue-600 font-bold">變色(藍)</td><td>不變色</td><td class="text-emerald-600 font-bold">○</td></tr>
+                            <tr><td class="font-bold">丁</td><td>不變色</td><td>不變色</td><td class="text-emerald-600 font-bold">○</td></tr>
+                        </tbody>
+                    </table>
+                </div>`,
+            orangeCarbonTable: `
+                <div class="my-3 bg-white p-3 rounded-xl border border-slate-200 shadow-sm space-y-2">
+                    <div class="text-sm text-slate-700 bg-amber-50 p-2.5 rounded-lg border border-amber-200">
+                        <div>🍊 <strong>雲林出產：</strong>雲林 ➔ 🚚（貨車）➔ 臺北</div>
+                        <div>🍊 <strong>美國進口：</strong>美國 ➔ ✈️（飛機）➔ 桃園國際機場 ➔ 🚚（貨車）➔ 臺北</div>
+                    </div>
+                    <table class="quiz-table w-full text-sm">
+                        <thead><tr><th>運送方式</th><th>碳足跡 (公克/公里)</th></tr></thead>
+                        <tbody>
+                            <tr><td>A. 貨車 🚚</td><td>158</td></tr>
+                            <tr><td>B. 飛機 ✈️</td><td class="text-rose-600 font-bold">285</td></tr>
+                        </tbody>
+                    </table>
+                </div>`,
+            mountainAB: `
+                <div class="my-3 flex justify-center bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
+                    <svg viewBox="0 0 360 185" class="w-full max-w-md h-auto">
+                        <rect width="360" height="185" fill="#f0f9ff" rx="8"/>
+                        <!-- 山峰 -->
+                        <path d="M15 170 L95 45 Q115 35 135 55 L235 155 L345 170" fill="#dcfce7" stroke="#15803d" stroke-width="2.5"/>
+                        <!-- 高空的 A -->
+                        <path d="M165 35 Q180 18 205 25 Q230 15 245 32 Q260 45 240 55 L170 55 Q150 45 165 35 Z" fill="#ffffff" stroke="#475569" stroke-width="2"/>
+                        <text x="205" y="46" text-anchor="middle" font-weight="bold" font-size="18" fill="#0f172a">A</text>
+                        <!-- 半山腰的 B -->
+                        <path d="M95 85 Q110 68 135 75 Q160 65 175 82 Q190 95 170 105 L100 105 Q80 95 95 85 Z" fill="#f8fafc" stroke="#475569" stroke-width="2"/>
+                        <text x="135" y="96" text-anchor="middle" font-weight="bold" font-size="18" fill="#0f172a">B</text>
+                        <!-- 山下大樹與人 -->
+                        <rect x="285" y="135" width="12" height="35" fill="#78350f"/>
+                        <circle cx="291" cy="120" r="24" fill="#22c55e" stroke="#166534" stroke-width="2"/>
+                        <circle cx="255" cy="148" r="5" fill="#334155"/>
+                        <line x1="255" y1="153" x2="255" y2="168" stroke="#334155" stroke-width="2"/>
+                        <text x="255" y="178" text-anchor="middle" font-size="11" fill="#334155">山下的人</text>
+                    </svg>
+                </div>`,
+            islandFrontMap: `
+                <div class="my-3 flex justify-center bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
+                    <svg viewBox="0 0 320 175" class="w-full max-w-sm h-auto">
+                        <rect width="320" height="175" fill="#f8fafc" stroke="#cbd5e1" rx="8"/>
+                        <!-- 等壓線背景 -->
+                        <path d="M10 45 Q110 35 210 10" fill="none" stroke="#94a3b8" stroke-width="1.5"/>
+                        <path d="M15 145 Q150 165 300 130" fill="none" stroke="#94a3b8" stroke-width="1.5"/>
+                        <!-- 小島與房屋 -->
+                        <path d="M85 95 Q140 70 205 80 Q235 100 200 125 Q130 135 85 115 Z" fill="#e2e8f0" stroke="#475569" stroke-width="2"/>
+                        <polygon points="120,95 132,83 144,95" fill="#fff" stroke="#334155" stroke-width="1.5"/>
+                        <rect x="123" y="95" width="18" height="15" fill="#fff" stroke="#334155" stroke-width="1.5"/>
+                        <polygon points="155,92 167,80 179,92" fill="#fff" stroke="#334155" stroke-width="1.5"/>
+                        <rect x="158" y="92" width="18" height="15" fill="#fff" stroke="#334155" stroke-width="1.5"/>
+                        <!-- 冷鋒線與三角形(朝右下) -->
+                        <path d="M15 80 Q135 65 245 12" fill="none" stroke="#1e293b" stroke-width="3.5"/>
+                        <polygon points="50,76 68,72 62,90" fill="#1e293b"/>
+                        <polygon points="105,67 123,62 117,80" fill="#1e293b"/>
+                        <polygon points="160,52 178,44 173,64" fill="#1e293b"/>
+                        <polygon points="210,30 226,21 223,41" fill="#1e293b"/>
+                        <!-- 指北針 N -->
+                        <text x="285" y="35" text-anchor="middle" font-weight="bold" font-size="18">N</text>
+                        <line x1="285" y1="40" x2="285" y2="75" stroke="#0f172a" stroke-width="2"/>
+                        <polygon points="285,38 280,50 290,50" fill="#0f172a"/>
+                        <line x1="272" y1="58" x2="298" y2="58" stroke="#0f172a" stroke-width="1.5"/>
+                    </svg>
+                </div>`
+        };
+
+        // ================= 115國小6上康軒自然 第一次段考 完整題庫（含圖表與官方詳解） =================
+        const allQuestions = [
+            // ---------------- 一、是非題 (單題 1~55) ----------------
+            { type: "TF", q: "颱風通常都會帶來強風豪雨，尤其位處颱風眼中心通過的地區，風雨的威力會更強。", ans: false, explanation: "《答案》×\n詳解：颱風眼中心經過的地區，大都是無風無雨的天氣狀況。" },
+            { type: "TF", q: "海水溫度的變化比陸地大，因此海洋無法調節氣溫的變化。", ans: false, explanation: "《答案》×\n詳解：海水溫度的變化比陸地小，因此海洋可以調節氣溫的變化。" },
+            { type: "TF", q: "在兩個燒杯的重量一樣下，各自倒入相同的水量後，加入不同平匙數的食鹽，如果加入的食鹽都能完全溶解，則我們就無法判斷哪一杯水加入的食鹽平匙數較多。", ans: false, explanation: "《答案》×\n詳解：溶解的食鹽量越多，食鹽水溶液的重量越重，由此可以判別出哪一杯水加入的食鹽平匙數較多。" },
+            { type: "TF", q: "選擇碳足跡較高的商品，是使地球環境永續發展的方法之一。", ans: false, explanation: "《答案》×\n詳解：應選擇碳足跡較低的商品。" },
+            { type: "TF", q: "純水中有其他物質溶解，會導電。", ans: false, explanation: "《答案》×\n詳解：純水中沒有其他物質溶解，不會導電。" },
+            { type: "TF", q: "檢驗水溶液酸鹼性時，若有未知的透明水溶液滴在紅色石蕊試紙上不變色，滴在藍色石蕊試紙上變紅色，則可以判斷這個透明水溶液是酸性水溶液。", ans: true, explanation: "《答案》○\n詳解：酸性水溶液的特性是使紅色石蕊試紙不變色，藍色石蕊試紙變紅色。" },
+            { type: "TF", q: "在冬季，當臺灣受到來自大陸地區的冷氣團影響時，天氣會變得寒冷。", ans: true, explanation: "《答案》○\n詳解：臺灣冬季容易受到來自西伯利亞或蒙古地區的大陸冷氣團影響，天氣會變得寒冷。" },
+            { type: "TF", q: "除了金屬能導電之外，有些水溶液也可以使電路形成通路，讓發光二極體發亮。", ans: true, explanation: "《答案》○\n詳解：除了金屬外，像食鹽水、醋、小蘇打水等水溶液也能使電路形成通路，讓發光二極體發亮。" },
+            { type: "TF", q: "除了金屬能導電之外，有些水溶液也容易導電，讓發光二極體發亮。", ans: true, explanation: "《答案》○\n詳解：有些水溶液（如食鹽水、醋、小蘇打水）容易導電，能讓發光二極體發亮。" },
+            { type: "TF", q: "酒精是一種水溶液，利用發光二極體測試，可以發現發光二極體會發亮，所以酒精具有導電性。", ans: false, explanation: "《答案》×\n詳解：酒精是一種水溶液，但酒精不易導電，所以利用發光二極體測試時，發光二極體不會發亮。" },
+            { type: "TF", q: "大氣層中，溫室氣體的變化與氣候變遷沒有關係。", ans: false, explanation: "《答案》×\n詳解：溫室氣體的變化與氣候變遷有關，當溫室氣體增加，地球表面的溫度會升高，造成氣候變遷。" },
+            { type: "TF", q: "小芳在地面天氣圖上發現「H」符號，表示這裡是圖中地勢最高、天氣最冷的地方。", ans: false, explanation: "《答案》×\n詳解：「H」符號在地面天氣圖上代表高氣壓中心的位置。" },
+            { type: "TF", q: "將電池和電線連接發光二極體，如果發光二極體會發亮，形成通路，則我們可以利用這個裝置連接不同的水溶液，測試水溶液的導電性。", ans: true, explanation: "《答案》○\n詳解：先測試發光二極體能正常發亮形成通路後，即可用來連接不同水溶液測試其導電性。" },
+            { type: "TF", q: "剛洗完手，手還潮溼時不可以碰觸插座，是因為自來水中溶解了其他物質，屬於一種容易導電的水溶液，可能會發生觸電危險。", ans: true, explanation: "《答案》○\n詳解：自來水中含有微量的礦物質等溶質，具有導電性，因此手溼碰觸插座容易導電而觸電。" },
+            { type: "TF", q: "在紅、藍色石蕊試紙上各滴一滴氨水，兩張試紙的顏色都呈現藍色，表示氨水是鹼性水溶液。", ans: true, explanation: "《答案》○\n詳解：能使紅色石蕊試紙變藍色，但不會使藍色石蕊試紙變色（仍呈藍色），是鹼性水溶液。" },
+            { type: "TF", q: "從冰箱裡拿出來的水果，放在桌上一段時間後，會看到水果表面有許多小水滴，這個現象和「露」的形成原因類似，都是因為空氣中的水蒸氣遇到較冷的物體，而在物體表面凝結成小水滴的緣故。", ans: true, explanation: "《答案》○\n詳解：兩種都是因為空氣中的水蒸氣遇到較冷的物體表面，而凝結成小水滴的現象。" },
+            { type: "TF", q: "包括臺灣在內，世界各地都出現氣溫上升、極端降雨、降雨過少等極端天氣變化的現象。", ans: true, explanation: "《答案》○\n詳解：受到全球暖化與氣候變遷影響，世界各地皆出現極端天氣變化。" },
+            { type: "TF", q: "將食鹽水、砂糖水和小蘇打水三種水溶液，分別滴在紅色石蕊試紙上，可以看到只有1張紅色石蕊試紙變色。", ans: true, explanation: "《答案》○\n詳解：食鹽水與砂糖水為中性（不變色），只有鹼性的小蘇打水會使紅色石蕊試紙變藍色。" },
+            { type: "TF", q: "雨和雪最主要的差別在於，從空中降落到地面時，雨是液態的水，而雪是固態的冰晶。", ans: true, explanation: "《答案》○\n詳解：雨落下到地面時是液態水，雪落下到地面時是固態冰晶。" },
+            { type: "TF", q: "有些植物具有顏色鮮豔的葉、花或果實，而且碰到酸鹼性水溶液時顏色會有規律變化，可以成為製作酸鹼指示劑的材料，例如蝶豆花。", ans: true, explanation: "《答案》○\n詳解：有些植物的葉、花或果實等部位富含花青素，可以作為自製酸鹼指示劑的材料。" },
+            { type: "TF", q: "物質溶解在水中後，就無法再將物質從水中分離出來。", ans: false, explanation: "《答案》×\n詳解：可以利用加熱、日晒或放在通風處使水分蒸發，將溶解在水中的食鹽或砂糖分離出來。" },
+            { type: "TF", q: "將水溶液中的水凝固後，可以使溶解在水中的物質分離出來。", ans: false, explanation: "《答案》×\n詳解：將水凝固成冰無法使溶解的物質分離出來，應透過「蒸發」水分的方式。" },
+            { type: "TF", q: "根據下方的颱風強度表，可以知道當颱風的近中心最大風速是每秒52公尺時，就會是強烈颱風。", diagramHtml: DIAGRAMS.typhoonTable, ans: true, explanation: "《答案》○\n詳解：近中心最大風速達每秒 51.0 公尺以上即為強烈颱風。" },
+            { type: "TF", q: "有些颱風來襲時，可以在衛星雲圖中看到颱風眼的位置，有些則沒有明顯的颱風眼。", ans: true, explanation: "《答案》○\n詳解：不是每個颱風都有明顯的颱風眼，強度較強的颱風較容易觀察到清晰的颱風眼。" },
+            { type: "TF", q: "每年夏、秋兩季，臺灣經常有颱風侵襲，但颱風通常都不是在臺灣附近形成的。", ans: true, explanation: "《答案》○\n詳解：颱風通常是在熱帶海洋上形成，再移動到臺灣附近。" },
+            { type: "TF", q: "小翔將醋和小蘇打水混合後，發現水溶液的酸鹼性沒有任何改變。", ans: false, explanation: "《答案》×\n詳解：醋是酸性水溶液，小蘇打水是鹼性水溶液，兩者互相混合後，酸鹼性會改變，根據混合的比例，有可能偏酸性、中性或鹼性。" },
+            { type: "TF", q: "蝶豆花瓣汁液的顏色會隨著水溶液酸鹼性的不同，呈現規律性的變化，可以作為檢驗水溶液酸鹼性的指示劑。", ans: true, explanation: "《答案》○\n詳解：蝶豆花瓣汁加入酸性水溶液呈紫色、中性維持藍色、鹼性呈綠色，可作為酸鹼指示劑。" },
+            { type: "TF", q: "雹是固態的冰粒，通常在對流旺盛的積雨雲中形成。", ans: true, explanation: "《答案》○\n詳解：雹通常在對流旺盛的積雨雲中形成，因為雲內空氣上下循環很快，會使降落的冰粒未完全融化就又被帶往高空，冰粒外圍的水會再次凝固，使冰粒越來越大而掉落地面，形成雹。" },
+            { type: "TF", q: "增加溫室氣體排放，可以減緩地球暖化的現象。", ans: false, explanation: "《答案》×\n詳解：減少溫室氣體排放，可以減緩地球暖化的現象。" },
+            { type: "TF", q: "環境溫度的改變，會使空氣中的水蒸氣產生各種形態變化，形成各種天氣現象。", ans: true, explanation: "《答案》○\n詳解：空氣中的水蒸氣隨環境溫度改變會形成雲、霧、雨、雪、露、霜等天氣現象。" },
+            { type: "TF", q: "在鹼性的小蘇打水中滴入食鹽水後，混合後的水溶液會變成中性。", ans: false, explanation: "《答案》×\n詳解：食鹽水為中性，因此鹼性的小蘇打水和中性的食鹽水混合後，混合水溶液呈現鹼性。" },
+            { type: "TF", q: "食鹽水是一種容易導電的水溶液，可以使發光二極體發亮，且放在通風處一段時間，會有白色物質產生。", ans: true, explanation: "《答案》○\n詳解：食鹽水容易導電，且水分蒸發後會留下白色的食鹽結晶。" },
+            { type: "TF", q: "當地球暖化，水蒸氣變得更容易蒸發，空氣的對流現象會變得明顯。", ans: true, explanation: "《答案》○\n詳解：地球暖化使水蒸氣更容易蒸發，空氣對流更旺盛，容易造成極端降雨。" },
+            { type: "TF", q: "食鹽和砂糖完全溶解在水中看不見以後，就無法用任何方法再將食鹽和砂糖取回。", ans: false, explanation: "《答案》×\n詳解：可以用晾晒或加熱等方式，讓水分蒸發，就能取回食鹽和砂糖。" },
+            { type: "TF", q: "甲和乙兩種水溶液混合後，將蝶豆花瓣汁滴入混合水溶液中，變成偏紫色，表示混合水溶液是酸性水溶液。", ans: true, explanation: "《答案》○\n詳解：蝶豆花瓣汁遇到酸性水溶液會變成偏紫色。" },
+            { type: "TF", q: "當空氣中的水蒸氣冷卻形成小水滴或冰晶時，如果飄浮在地面附近，就是霧；飄浮在空中，就是雲。", ans: true, explanation: "《答案》○\n詳解：雲和霧都是水蒸氣冷卻形成的小水滴或冰晶，飄浮在地面附近是霧，飄浮在空中是雲。" },
+            { type: "TF", q: "地面天氣圖中，等壓線是將氣壓數值相同的點連起來，通常形成一條條開放的直線。", ans: false, explanation: "《答案》×\n詳解：等壓線繪製完成後應為封閉曲線。" },
+            { type: "TF", q: "自備購物袋和使用環保餐具會增加碳足跡，無法幫助地球永續發展。", ans: false, explanation: "《答案》×\n詳解：自備購物袋和使用環保餐具是減少碳足跡的行動，可以幫助地球永續發展。" },
+            { type: "TF", q: "進行「水溶液的導電性」實驗，純水因為沒有其他物質溶解在其中，不會導電，因此適合用來作為實驗中的「對照組」。", ans: true, explanation: "《答案》○\n詳解：純水不含其他溶質，不會導電，以此作為對照組，可以觀察加入其他溶質（形成實驗組）後是否改變導電的性質。" },
+            { type: "TF", q: "近100多年來，空氣中二氧化碳濃度變高，全世界氣溫也持續上升，二氧化碳濃度會影響全世界的氣溫。", ans: true, explanation: "《答案》○\n詳解：二氧化碳是溫室氣體，濃度升高會使全球平均氣溫跟著上升。" },
+            { type: "TF", q: "將砂糖水連接到電路中，可以使發光二極體發亮，表示砂糖水是中性水溶液。", ans: false, explanation: "《答案》×\n詳解：砂糖水不易導電，無法使發光二極體發亮。" },
+            { type: "TF", q: "如果想要測試水溶液的導電性，下圖的連接方式是正確的。（是非題第 42 題）", diagramHtml: DIAGRAMS.wrongCircuitBeaker, ans: false, explanation: "《答案》×\n詳解：發光二極體的長腳端要接在由電池正極出來的電線上，短腳端要接在由電池負極出來的電線上，且電池盒須通電。" },
+            { type: "TF", q: "如果衛星雲圖上某地區被白色的雲層籠罩，表示當地的天氣狀況晴朗炎熱。", ans: false, explanation: "《答案》×\n詳解：衛星雲圖上被白色雲層籠罩的區域，代表該區域上空有雲，天氣狀況較有可能是陰天或下雨。" },
+            { type: "TF", q: "氣象預報「週三之後，隨著鋒面往南移動，臺灣地區的降雨將會逐漸趨緩」，報告中提到的「鋒面」是指冷、暖氣團互相接觸影響的地方。", ans: true, explanation: "《答案》○\n詳解：鋒面是指冷、暖氣團交會時，暖空氣中的水蒸氣遇到冷空氣凝結成小水滴，沿著交界面形成的一條雲帶。" },
+            { type: "TF", q: "大氣中能夠吸收熱能的氣體，例如二氧化碳、水蒸氣和甲烷等，稱為溫室氣體。", ans: true, explanation: "《答案》○\n詳解：大氣中能夠吸收熱能的氣體，例如二氧化碳、水蒸氣、甲烷、氧化亞氮和氟氯碳化物等，稱為溫室氣體，能產生溫室效應。" },
+            { type: "TF", q: "氣候變遷可能會造成一些問題，例如極端降雨使水庫淤積大量土石。", ans: true, explanation: "《答案》○\n詳解：極端降雨容易沖刷山坡土石，造成水庫大量淤積。" },
+            { type: "TF", q: "生產食物的過程會用到許多水資源，因此避免浪費食物可以減少水足跡。", ans: true, explanation: "《答案》○\n詳解：避免浪費食物可以減少食物生產過程所消耗的水足跡。" },
+            { type: "TF", q: "天空中的雲是風把水蒸氣吹聚在一起所形成的現象。", ans: false, explanation: "《答案》×\n詳解：天空中的雲是水蒸氣在上升的過程中，附著在微小顆粒上，再凝結成細小的水滴或直接變成冰晶，飄浮在空中的現象。" },
+            { type: "TF", q: "暖氣團減弱、冷氣團增強的冬季是滯留鋒容易出現的季節。", ans: false, explanation: "《答案》×\n詳解：滯留鋒容易出現在每年五、六月，暖氣團和冷氣團勢均力敵的時候。" },
+            { type: "TF", q: "水可以溶解許多物質，但只能溶解固體。", ans: false, explanation: "《答案》×\n詳解：水也可以溶解液體和氣體。" },
+            { type: "TF", q: "觀察完水溶液的導電性後，應切換開關形成斷路，以免發光二極體燒壞。", ans: true, explanation: "《答案》○\n詳解：觀察完應切換開關形成斷路，避免發光二極體損壞。" },
+            { type: "TF", q: "有些水溶液具有導電性，不易使發光二極體發亮；有些水溶液則不具有導電性，容易使發光二極體發亮。", ans: false, explanation: "《答案》×\n詳解：具有導電性的水溶液「容易」使發光二極體發亮；不具導電性的水溶液則「不易」使發光二極體發亮。" },
+            { type: "TF", q: "檢驗小蘇打水的酸鹼性時，藍色石蕊試紙會變成紅色，紅色石蕊試紙會變成藍色。", ans: false, explanation: "《答案》×\n詳解：小蘇打水是鹼性水溶液，滴在藍色石蕊試紙上不會變色，滴在紅色石蕊試紙上會變藍色。" },
+            { type: "TF", q: "食鹽顆粒不易導電，但食鹽水容易導電。", ans: true, explanation: "《答案》○\n詳解：食鹽顆粒本身不易導電，但完全溶解於水中，變成食鹽水後容易導電。" },
+            { type: "TF", q: "測試水溶液導電性的實驗中，醋、食鹽水、砂糖水等水溶液，都容易讓發光二極體發亮。", ans: false, explanation: "《答案》×\n詳解：醋、食鹽水等水溶液都容易導電，使發光二極體發亮；砂糖水則不容易導電。" },
+
+            // ---------------- 二、選擇題 (單題 1~55) ----------------
+            { type: "MC", q: "秋季某一個天氣晴朗的早晨，國斌起床後，看到院子裡盆栽的葉片上有許多小水滴。這些小水滴可能是下列哪一種現象造成的？", options: ["雪", "露", "霜", "冰"], ans: 1, explanation: "《答案》② 露\n詳解：地面附近的水蒸氣附著在較冷的葉片表面，凝結成小水珠，稱為露。" },
+            { type: "MC", q: "小妍想要購買蘋果來做蘋果派，下列哪一種行為無法有效減少碳足跡？", options: ["自備購物袋選購蘋果", "購買美國進口的蘋果", "購買在地出產的蘋果", "吃不完的蘋果派用環保保鮮盒密封放冰箱冷藏，不直接丟棄"], ans: 1, explanation: "《答案》② 購買美國進口的蘋果\n詳解：購買國外進口的蘋果需要長途運輸，會產生較多的碳足跡。" },
+            { type: "MC", q: "下列哪一組物品連接在電路中，都可以讓電路中的發光二極體發亮？", options: ["橡皮擦、小蘇打水", "竹筷、醋", "硬幣、食鹽水", "迴紋針、橡皮筋"], ans: 2, explanation: "《答案》③ 硬幣、食鹽水\n詳解：橡皮擦、竹筷、橡皮筋等屬於「電的不良導體」，將使電路形成「斷路」，發光二極體不會發亮。" },
+            { type: "MC", q: "有一杯水溶液滴入蝶豆花瓣汁後，變成偏綠色，下列哪一杯水溶液的酸鹼性與它相同？", options: ["汽水", "醋", "小蘇打水", "砂糖水"], ans: 2, explanation: "《答案》③ 小蘇打水\n詳解：水溶液滴入蝶豆花瓣汁變成偏綠色，表示該水溶液是鹼性水溶液。小蘇打水是鹼性水溶液，汽水、醋是酸性水溶液，砂糖水是中性水溶液。" },
+            { type: "MC", q: "當購買下列哪一項食物時，所產生碳足跡最大？", options: ["美國出產的櫻桃", "高雄出產的芭樂", "雲林出產的柳橙", "臺南出產的絲瓜"], ans: 0, explanation: "《答案》① 美國出產的櫻桃\n詳解：跨國進口的農產品運輸距離最遠，產生的碳足跡最大。" },
+            { type: "MC", q: "下列關於酸性水溶液的敘述，哪一項是正確的？", options: ["酸性水溶液會使藍色石蕊試紙變紫色", "酸性水溶液加入蝶豆花瓣汁，水溶液會變成綠色", "酸性水溶液不會使紅色石蕊試紙變色", "加水後不會變色的水溶液，就是酸性水溶液"], ans: 2, explanation: "《答案》③ 酸性水溶液不會使紅色石蕊試紙變色\n詳解：①酸性水溶液會使藍色石蕊試紙變紅色；②酸性水溶液加入蝶豆花瓣汁，水溶液會變成紫色；④加水後只會將水溶液稀釋，無法用來判斷水溶液的酸鹼性。" },
+            { type: "MC", q: "測試水溶液的導電性時，發光二極體的短腳端應如何連接？", options: ["與電池正極連接", "與電池負極連接", "與電池的正極或負極連接", "與發光二極體的長腳端連接"], ans: 1, explanation: "《答案》② 與電池負極連接\n詳解：發光二極體的長腳端接正極，短腳端接負極。" },
+            { type: "MC", q: "下列關於「颱風眼」的敘述，何者不正確？", options: ["颱風眼位於颱風的中心", "颱風眼區域通常無雲", "颱風眼通過區域大都呈現狂風驟雨的天氣狀況", "不是每個颱風都有明顯的颱風眼"], ans: 2, explanation: "《答案》③ 颱風眼通過區域大都呈現狂風驟雨的天氣狀況\n詳解：颱風眼中心經過的地區，大都是無風無雨的天氣狀況。" },
+            { type: "MC", q: "下列哪一種水溶液可以使紅色石蕊試紙變藍色？", options: ["檸檬水", "砂糖水", "小蘇打水", "醋"], ans: 2, explanation: "《答案》③ 小蘇打水\n詳解：小蘇打水為鹼性水溶液，會使紅色石蕊試紙變藍色，但不會使藍色石蕊試紙變色。" },
+            { type: "MC", q: "請問下面這張衛星雲圖中，哪一個區域有颱風？（選擇題第 10 題）", diagramHtml: DIAGRAMS.satelliteTyphoon, options: ["甲", "乙", "丙", "丁"], ans: 3, explanation: "《答案》④ 丁\n詳解：衛星雲圖中螺旋狀的雲團（丁），就是颱風大致涵蓋的範圍。" },
+            { type: "MC", q: "「中央氣象署預報員表示週三之前臺灣都受到梅雨鋒面影響，會有局部的大雨或豪雨發生。」從上文中，我們可以得知當時最有可能是哪一個月分？", options: ["1月", "5月", "9月", "12月"], ans: 1, explanation: "《答案》② 5月\n詳解：每年 5、6 月是臺灣的梅雨季，容易受到滯留鋒（梅雨鋒面）影響。" },
+            { type: "MC", q: "小翔想從食鹽水中分離出食鹽，下列哪一種方法較為適合？", options: ["將食鹽水放到冷凍庫凝固", "將食鹽水加熱，使水分蒸發", "加更多水到食鹽水中", "加砂糖到食鹽水中溶解"], ans: 1, explanation: "《答案》② 將食鹽水加熱，使水分蒸發\n詳解：將食鹽水加熱使水分蒸發後，就能取回食鹽結晶。" },
+            { type: "MC", q: "寒假時小智和家人到合歡山旅行，小智在山上不可能觀察到下列哪一個現象？", options: ["夜晚氣溫降低時，葉片邊緣結了霜", "天空飄下白白的雪花", "日出時，看到壯觀的雲海", "沒有雲的天空，降下傾盆大雨"], ans: 3, explanation: "《答案》④ 沒有雲的天空，降下傾盆大雨\n詳解：雨是由雲中的小水滴或冰晶聚集變大、變重，以液態的形式降落地面形成的，所以沒有雲不可能下雨。" },
+            { type: "MC", q: "將酸性和鹼性水溶液以適當比例加在一起，混合後會變成中性水溶液。利用這樣的原理，在小蘇打水中滴入下列哪一種水溶液，最可能使混合後的水溶液變成中性？", options: ["食鹽水", "砂糖水", "醋", "石灰水"], ans: 2, explanation: "《答案》③ 醋\n詳解：在鹼性的小蘇打水中滴入酸性的醋，最可能使混合後的水溶液形成中性水溶液。" },
+            { type: "MC", q: "家凱對於大氣中雲層分布的變化情形很有興趣，他應該去觀察下列哪一種氣象圖表？", options: ["降雨機率表", "各地一週天氣預報", "連續幾天的地面天氣圖", "連續幾天的衛星雲圖"], ans: 3, explanation: "《答案》④ 連續幾天的衛星雲圖\n詳解：衛星雲圖能觀察大氣中雲層的分布與變化情形。" },
+            { type: "MC", q: "下列哪一項是將水溶液中的物質分離出來的例子？", options: ["透過熬煮甘蔗汁，製作紅糖", "將砂糖倒入水中，製作砂糖水", "將水倒入太鹹的湯", "將水放置冷凍庫，製作冰塊"], ans: 0, explanation: "《答案》① 透過熬煮甘蔗汁，製作紅糖\n詳解：熬煮甘蔗汁是利用加熱讓水分蒸發，將溶解在水中的糖分離出來。" },
+            { type: "MC", q: "下列哪一個不是酸性水溶液和鹼性水溶液互相作用後變成中性水溶液的生活應用？", options: ["胃酸過多時吃胃藥", "用酸性清潔劑清洗熱水瓶內的水垢", "在冰淇淋上淋草莓果醬", "在酸化的土壤上撒石灰粉"], ans: 2, explanation: "《答案》③ 在冰淇淋上淋草莓果醬\n詳解：「在冰淇淋上淋草莓果醬」只有增加口感，並未產生酸和鹼作用，改變冰淇淋原來的酸鹼性質。" },
+            { type: "MC", q: "下列哪一項人類的行為較不會產生二氧化碳？", options: ["利用化石燃料發電", "用飛機進口國外水果", "使用天然氣熱水器", "出門多步行或騎腳踏車"], ans: 3, explanation: "《答案》④ 出門多步行或騎腳踏車\n詳解：出門多步行或騎腳踏車能減少消耗化石燃料，較不會產生二氧化碳。" },
+            { type: "MC", q: "如果將砂糖水放在通風的地方，經過一段時間後，發現沒有水了，只剩下砂糖顆粒，這是什麼現象造成的？", options: ["凝結", "融化", "凝固", "蒸發"], ans: 3, explanation: "《答案》④ 蒸發\n詳解：砂糖水中分離出砂糖，是因為水分「蒸發」而造成的。" },
+            { type: "MC", q: "把中性水溶液分別滴在紅色及藍色石蕊試紙上，會有什麼改變？", options: ["只有紅色石蕊試紙會變色", "只有藍色石蕊試紙會變色", "兩種試紙都不會變色", "兩種試紙都會變色"], ans: 2, explanation: "《答案》③ 兩種試紙都不會變色\n詳解：中性水溶液不會使紅色或藍色石蕊試紙變色。" },
+            { type: "MC", q: "當雲中的冰晶在降落的過程中融化了，落到地面時稱為什麼？", options: ["霧", "雨", "露", "雪"], ans: 1, explanation: "《答案》② 雨\n詳解：雲中的冰晶在降落過程融化成水滴，落到地面時稱為雨。" },
+            { type: "MC", q: "小榮將砂糖水、小蘇打水、檸檬水和醋等水溶液分別滴在藍色石蕊試紙上，實驗後，有幾張藍色石蕊試紙的顏色會改變？", options: ["1張", "2張", "3張", "4張"], ans: 1, explanation: "《答案》② 2張\n詳解：會使藍色石蕊試紙變色的水溶液為酸性的檸檬水和醋。" },
+            { type: "MC", q: "已知有砂糖水、食鹽水、小蘇打水和醋四種水溶液，根據下表，下列哪一項敘述是正確的？（選擇題第 23 題）", diagramHtml: DIAGRAMS.abcdSolutionsTable, options: ["A是小蘇打水", "B是食鹽水", "C是砂糖水", "D是醋"], ans: 2, explanation: "《答案》③ C是砂糖水\n詳解：根據測試結果，A是醋、B是小蘇打水、C是砂糖水、D是食鹽水。" },
+            { type: "MC", q: "雲和霧最主要的差別在於下列哪一項？", options: ["雲是液態，霧是固態", "雲飄浮在空中，霧飄浮在地面附近", "雲的形成溫度在0℃以上，霧的形成溫度低於0℃", "雲是白色的，霧是透明無色的"], ans: 1, explanation: "《答案》② 雲飄浮在空中，霧飄浮在地面附近\n詳解：雲和霧的形成都是空中的水蒸氣冷卻形成小水滴或冰晶，飄浮在空中就是雲，飄浮在地面附近就是霧。" },
+            { type: "MC", q: "在鋼杯中倒入冰塊、水和食鹽之後，用筷子攪拌均勻，不久之後杯壁外側出現白色固體物質。這種情形類似大自然中的哪一種天氣現象？", options: ["下雨", "結霜", "降雪", "起霧"], ans: 1, explanation: "《答案》② 結霜\n詳解：杯壁溫度降至 0℃ 以下，使空氣中的水蒸氣直接變成白色冰晶，類似大自然的結霜。" },
+            { type: "MC", q: "用石蕊試紙檢測水溶液的酸鹼性時，小廷用同一支滴管先吸取醋，再吸取小蘇打水進行測試。小廷發現他的小蘇打水試紙顏色變化與其他組不同，造成這個現象最可能的原因是什麼？", options: ["滴管因吸取兩種水溶液而損壞", "殘留的醋改變小蘇打水的酸鹼性", "滴管只能用來吸取酸性水溶液", "醋具有腐蝕性，會讓滴管使用壽命縮短"], ans: 1, explanation: "《答案》② 殘留的醋改變小蘇打水的酸鹼性\n詳解：用同一支滴管先吸取醋(酸性)再吸取小蘇打水(鹼性)，滴管內或滴頭殘留的醋會混入小蘇打水，讓小蘇打水的酸鹼性被改變，影響實驗結果。" },
+            { type: "MC", q: "小芳將食鹽溶解在30克重的水中，請問食鹽水的重量有可能是多少克重？", options: ["25克重", "35克重", "10克重", "20克重"], ans: 1, explanation: "《答案》② 35克重\n詳解：食鹽溶解在水中，會使水溶液的重量增加，因此食鹽水的重量應會大於30克重。" },
+            { type: "MC", q: "下列關於氣候的敘述，哪一項是正確的？", options: ["是短時間內的大氣變化情形", "是長時間的天氣現象平均和趨勢", "每天都能看到明顯的氣候差異", "近百年氣候穩定，沒有太大的變化"], ans: 1, explanation: "《答案》② 是長時間的天氣現象平均和趨勢\n詳解：天氣是短時間內的大氣變化情形，氣候是長時間的天氣現象平均和趨勢，所以每天只能看到明顯的天氣差異，無法看到明顯的氣候差異；近百年全世界氣溫不斷上升，造成全球暖化。" },
+            { type: "MC", q: "下列哪一項訊息是我們無法從颱風行進路線圖上得知的？", options: ["颱風帶來的雨量", "颱風的行進路線", "颱風的強度變化", "颱風從生成到消散的過程"], ans: 0, explanation: "《答案》① 颱風帶來的雨量\n詳解：颱風行進路線圖無法直接看出各地的累積降雨量。" },
+            { type: "MC", q: "發光二極體的長腳端和短腳端分別要接在由電池哪一極出來的電線上，才能正確連接電路？", options: ["都是正極", "都是負極", "負極；正極", "正極；負極"], ans: 3, explanation: "《答案》④ 正極；負極\n詳解：發光二極體的長腳端要接正極、短腳端要接負極。" },
+            { type: "MC", q: "我們所觀測的天氣現象變化和下列哪一項的關係最為密切？", options: ["二氧化碳", "氧氣", "大氣中的水", "空氣汙染"], ans: 2, explanation: "《答案》③ 大氣中的水\n詳解：雲、霧、露、霜、雨、雪等天氣現象都與大氣中的水形態變化密切相關。" },
+            { type: "MC", q: "碳足跡計算的「溫室氣體」排放量總和中，可能包含下列哪一種氣體？", options: ["氧氣", "氮氣", "氫氣", "二氧化碳"], ans: 3, explanation: "《答案》④ 二氧化碳\n詳解：二氧化碳是主要的溫室氣體。" },
+            { type: "MC", q: "下列哪一種不屬於水溶液？", options: ["砂糖水", "汽水", "食鹽水", "洗衣粉"], ans: 3, explanation: "《答案》④ 洗衣粉\n詳解：洗衣粉尚未溶解於水中，不屬於水溶液。" },
+            { type: "MC", q: "當空氣中的水蒸氣，遇冷變成液態水的現象稱為什麼？", options: ["結晶", "凝固", "蒸發", "凝結"], ans: 3, explanation: "《答案》④ 凝結\n詳解：空氣中的水蒸氣，遇冷變成液態水的現象，稱為凝結；凝固是指液態水遇冷變成固態冰的現象。" },
+            { type: "MC", q: "氣象預報報導：「隨著颱風外圍雲系籠罩臺灣，各地今起有雨，可望增加水庫蓄水量，紓解中南部連日來的旱象。」由上述氣象預報說明判斷，該預報發布日期最有可能在下列哪一個時候？", options: ["農曆春節", "耶誕節", "清明節", "中秋節"], ans: 3, explanation: "《答案》④ 中秋節\n詳解：夏、秋兩季常有颱風侵襲臺灣，中秋節屬於秋季。" },
+            { type: "MC", q: "在兩杯20℃、100毫升的水中加入不同平匙數的砂糖，攪拌後使其完全溶解，比較平匙數較多和較少的砂糖水溶液，兩杯重量有什麼不同？", options: ["平匙數多的砂糖水溶液比較重", "平匙數少的砂糖水溶液比較重", "兩杯砂糖水溶液都一樣重", "無法比較兩杯砂糖水溶液的重量"], ans: 0, explanation: "《答案》① 平匙數多的砂糖水溶液比較重\n詳解：水溶液的重量＝溶質量＋水量，當水量固定時，溶質量越多，水溶液的重量越重。" },
+            { type: "MC", q: "小萱將電池、電線與發光二極體(LED)連接，準備在測量水溶液的導電性之前，先測試發光二極體會不會發亮。下列哪一項敘述是不正確的？", options: ["若發光二極體會亮，代表裝置能形成通路", "若發光二極體不會亮，則可能是因為電池沒電了", "發光二極體沒有方向性，因此將電池的正、負極反過來連接，依然會發亮", "測試水溶液的導電性時，若發光二極體會亮，則代表容易導電"], ans: 2, explanation: "《答案》③ 發光二極體沒有方向性，因此將電池的正、負極反過來連接，依然會發亮\n詳解：發光二極體(LED)具有方向性，必須以正確方向連接，將長腳端接正極、短腳端接負極，電路才會形成通路並發亮。" },
+            { type: "MC", q: "下列關於雲和霧的敘述，哪一項是正確的？", options: ["雲飄浮在地面附近", "霧飄浮在空中", "雲是水蒸發成水蒸氣上升到空中，因溫度降低而形成", "霧是水蒸氣附著在物體表面，直接變成的冰晶"], ans: 2, explanation: "《答案》③ 雲是水蒸發成水蒸氣上升到空中，因溫度降低而形成\n詳解：雲飄浮在空中，霧飄浮在地面附近。" },
+            { type: "MC", q: "雲中的冰晶聚集變大，越來越重，如果冰晶在落下的過程中沒有融化，直接掉落地面，會形成下列哪一種天氣現象？", options: ["霜", "露", "雪", "雨"], ans: 2, explanation: "《答案》③ 雪\n詳解：雲中冰晶落下時沒有融化，直接落到地面稱為雪。" },
+            { type: "MC", q: "將砂糖溶解在裝有水的燒杯中，製作成砂糖水，下列哪一項屬於溶質？", options: ["砂糖", "燒杯", "水", "砂糖水"], ans: 0, explanation: "《答案》① 砂糖\n詳解：在水溶液中，被溶解的物質（砂糖）稱為溶質，水稱為溶劑。" },
+            { type: "MC", q: "進行「水溶液的導電性」實驗時，為什麼觀察完水溶液應切換開關形成斷路？", options: ["避免水溶液的酸鹼性改變", "避免水溶液中的水蒸發", "避免水溶液的導電性改變", "避免發光二極體燒壞"], ans: 3, explanation: "《答案》④ 避免發光二極體燒壞\n詳解：觀察完畢後切換開關形成斷路，可避免發光二極體燒壞。" },
+            { type: "MC", q: "想要準確測試水溶液會不會導電，應使用下列哪一種水來製作成水溶液？", options: ["自來水", "純水", "海水", "礦泉水"], ans: 1, explanation: "《答案》② 純水\n詳解：純水中沒有其他物質溶解，不會導電，使用純水製作成水溶液，較不會影響實驗結果。" },
+            { type: "MC", q: "下列哪一種氣體不是溫室氣體？", options: ["氮氣", "二氧化碳", "水蒸氣", "甲烷"], ans: 0, explanation: "《答案》① 氮氣\n詳解：大氣中能夠吸收熱能的氣體，例如二氧化碳、水蒸氣、甲烷、氧化亞氮和氟氯碳化物等，稱為溫室氣體。" },
+            { type: "MC", q: "下列關於霧的敘述，哪一項是不正確的？", options: ["飄浮在地面附近", "是水蒸氣遇冷形成", "飄浮在高空", "屬於水循環的一部分"], ans: 2, explanation: "《答案》③ 飄浮在高空\n詳解：霧飄浮在地面附近，飄浮在高空的是雲。" },
+            { type: "MC", q: "下列哪一種天氣現象最有可能發展成颱風？", options: ["熱帶性低氣壓", "暖鋒", "冷鋒", "寒帶性高氣壓"], ans: 0, explanation: "《答案》① 熱帶性低氣壓\n詳解：熱帶海洋上的熱帶性低氣壓持續發展增強後，可能形成颱風。" },
+            { type: "MC", q: "下列哪一項可以用來衡量直接與間接的水資源使用量呢？", options: ["水價值", "水用量", "回收水", "水足跡"], ans: 3, explanation: "《答案》④ 水足跡\n詳解：水足跡可用來衡量直接與間接消耗的水資源總量。" },
+            { type: "MC", q: "下列有關水溶液導電性的敘述，哪一項是不正確的？", options: ["食鹽無法導電，但食鹽水可以導電", "純水無法導電，但將砂糖完全溶解在純水中後成為砂糖水就可以導電", "自來水中有溶解其他物質，容易導電，所以手潮溼時不可以觸碰插座以免觸電", "純水無法導電，所以適合用來製作其他水溶液"], ans: 1, explanation: "《答案》② 純水無法導電，但將砂糖完全溶解在純水中後成為砂糖水就可以導電\n詳解：砂糖水無法使電路中的發光二極體發亮，所以砂糖水無法導電。" },
+            { type: "MC", q: "利用下列哪一個方法，無法分離出溶解在水中的物質？", options: ["放在通風的地方一段時間", "放在陽光底下曝晒一段時間", "持續在水溶液中加水", "利用瓦斯爐熬煮加熱"], ans: 2, explanation: "《答案》③ 持續在水溶液中加水\n詳解：持續加水只會稀釋水溶液，無法將溶解的物質分離出來。" },
+            { type: "MC", q: "下列關於溫室氣體與溫室效應的敘述，哪一項是不正確的？", options: ["溫室氣體是指可以吸收電能的氣體", "溫室氣體可以使部分能量停留在大氣層內", "大氣層中的溫室氣體增加，地球表面溫度也會升高", "水蒸氣是溫室氣體"], ans: 0, explanation: "《答案》① 溫室氣體是指可以吸收電能的氣體\n詳解：①溫室氣體是指可以吸收熱能的氣體。" },
+            { type: "MC", q: "下列有關颱風的敘述，哪一項是不正確的？", options: ["衛星雲圖中螺旋狀的雲團，就是颱風大致涵蓋的範圍", "颱風的路徑及強度是無法預測的", "颱風通常生成於熱帶海洋上", "為了掌握颱風動態，我們須注意中央氣象署發布的颱風資訊"], ans: 1, explanation: "《答案》② 颱風的路徑及強度是無法預測的\n詳解：氣象署可透過氣象觀測與衛星雲圖等資料預測颱風的路徑及強度變化。" },
+            { type: "MC", q: "下圖中，「甲」地的氣壓數值可能是下列何者？（選擇題第 51 題）", diagramHtml: DIAGRAMS.isobar1025, options: ["1028", "1020", "1033", "1025"], ans: 3, explanation: "《答案》④ 1025\n詳解：甲地位在 1025 百帕的氣壓線上，因此氣壓是 1025 百帕。" },
+            { type: "MC", q: "進行「水溶液的導電性」實驗時，下列哪一項敘述是不正確的？", options: ["觀察完應切換開關形成斷路", "測試完一種水溶液後，不須沖洗電線，可直接測試下一種水溶液", "放入水溶液中的電線兩端不可以互相接觸", "測試水溶液的導電性前，須先測試發光二極體會不會發亮"], ans: 1, explanation: "《答案》② 測試完一種水溶液後，不須沖洗電線，可直接測試下一種水溶液\n詳解：測試完一種水溶液後，應於斷路時，以清水沖洗電線接觸水溶液的部分並擦乾，以免影響實驗結果。" },
+            { type: "MC", q: "觀察「全球平均氣溫與空氣中二氧化碳濃度圖表」，下列哪一項敘述是不正確的？", options: ["二氧化碳濃度有逐漸升高的趨勢", "全球平均氣溫有逐漸升高的趨勢", "二氧化碳濃度與全球平均氣溫無關", "二氧化碳濃度升高，全球平均氣溫也跟著升高"], ans: 2, explanation: "《答案》③ 二氧化碳濃度與全球平均氣溫無關\n詳解：當空氣中二氧化碳濃度升高，全球平均氣溫也跟著升高，兩者密切相關。" },
+            { type: "MC", q: "小晴看到一款紅色眼藥水標示含有純水、氯化鈉和維生素B12成分。下列關於這瓶眼藥水的敘述，哪一項是正確的？", options: ["純水屬於溶劑", "眼藥水含有多種成分，因此不屬於水溶液", "眼藥水呈現紅色，因此不屬於混合物", "若要將眼藥水中的物質分離出來，可以再加入更多純水"], ans: 0, explanation: "《答案》① 純水屬於溶劑\n詳解：眼藥水是生活中常見的水溶液，通常有鹽類、維生素等成分溶解在水中，屬於混合物。而水溶液中「被溶解的物質」稱為溶質，「水」稱為溶劑。題目說明這瓶眼藥水的成分包含純水、氯化鈉和維生素B12，因此可判斷純水屬於溶劑。" },
+            { type: "MC", q: "小晴想連接發光二極體到電路中，他應該如何正確連接電路，才能使發光二極體發亮？", options: ["發光二極體的長腳端接在由電池正極出來的電線上，短腳端接在由電池負極出來的電線上", "發光二極體的短腳端接在由電池正極出來的電線上，長腳端接在由電池負極出來的電線上", "發光二極體的短腳端與長腳端互相連接", "電池正極和負極互相連接"], ans: 0, explanation: "《答案》① 發光二極體的
